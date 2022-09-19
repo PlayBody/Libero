@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:libero/src/common/bussiness/stamps.dart';
 import 'package:libero/src/common/globals.dart' as globals;
 import 'package:libero/src/http/webservice.dart';
 import 'package:libero/src/model/order_model.dart';
@@ -168,6 +169,9 @@ class ClReserve {
       'menu_ids': menuIds,
       'user_id': globals.userId
     }).then((v) => {results = v});
+
+    if (results['isUpdateGrade'])
+      globals.userRank = await ClCoupon().loadRankData(context, globals.userId);
 
     return results['isStampAdd'];
   }

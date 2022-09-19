@@ -2,6 +2,8 @@ library my_prj.globals;
 
 import 'package:libero/src/model/menumodel.dart';
 
+import '../model/rankmodel.dart';
+
 // connect globals
 String userId = '';
 String userName = '';
@@ -21,3 +23,4 @@ String squareToken = '';
 
 int progressPercent = 0;
 bool isUpload = false;
+RankModel? userRank;

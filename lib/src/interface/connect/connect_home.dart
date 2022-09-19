@@ -139,12 +139,14 @@ class _ConnectHome extends State<ConnectHome> {
     userNo = user.userNo;
     userGrade = user.grade;
 
+    globals.userRank = await ClCoupon().loadRankData(context, globals.userId);
+
     if (userGrade == '1') userGrade = 'Advanced';
 
     sites = await ClCompany().loadCompanySites(context, APPCOMANYID);
     homeMenus = await ClCommon().loadConnectHomeMenu(context);
 
-    isUseStampAndCoupon = await ClCoupon().isHaveCouponOrStamp(context);
+    // isUseStampAndCoupon = await ClCoupon().isHaveCouponOrStamp(context);
 
     globals.isCart = homeMenus.contains('connect_product');
     getUnreadMessageCount();
@@ -391,7 +393,7 @@ class _ConnectHome extends State<ConnectHome> {
                       letterSpacing: 1,
                       fontSize: 12,
                       color: cardFontColor)),
-              Text(userGrade,
+              Text(globals.userRank!.rankName,
                   style: TextStyle(
                       fontFamily: 'Hiragino',
                       letterSpacing: 1,

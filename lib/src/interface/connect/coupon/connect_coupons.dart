@@ -37,21 +37,11 @@ class _ConnectCoupons extends State<ConnectCoupons> {
   }
 
   Future<List> loadCouponData() async {
-    ranks = await ClCoupon().loadRanks(context, '5');
-    Map<dynamic, dynamic> stampResults = {};
-    await Webservice().loadHttp(context, apiLoadUserStampUrl, {
-      'user_id': globals.userId,
-      'company_id': APPCOMANYID
-    }).then((value) => stampResults = value);
+    // ranks = await ClCoupon().loadRanks(context, '5');
+    stampCount =
+        globals.userRank == null ? 5 : int.parse(globals.userRank!.maxStamp);
 
-    stamps = [];
-    if (stampResults['isLoad']) {
-      for (var item in stampResults['stamps']) {
-        stamps.add(StampModel.fromJson(item));
-      }
-      if (stampResults['stamp_count'] != null)
-        stampCount = int.parse(stampResults['stamp_count']);
-    }
+    stamps = await ClCoupon().loadUserStamps(context, globals.userId);
 
     Map<dynamic, dynamic> results = {};
     await Webservice().loadHttp(context, apiLoadUserCouponsUrl,
@@ -80,14 +70,14 @@ class _ConnectCoupons extends State<ConnectCoupons> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Container(
-                      child: DropDownModelSelect(items: [
-                        ...ranks.map((e) => DropdownMenuItem(
-                              child: Text(e.rankName),
-                              value: e.rankId,
-                            ))
-                      ], tapFunc: (v) {}),
-                    ),
+                    // Container(
+                    //   child: DropDownModelSelect(items: [
+                    //     ...ranks.map((e) => DropdownMenuItem(
+                    //           child: Text(e.rankName),
+                    //           value: e.rankId,
+                    //         ))
+                    //   ], tapFunc: (v) {}),
+                    // ),
                     _getCoupons(),
                     SizedBox(height: 8),
                     // _getCardUserButton(),
@@ -122,8 +112,7 @@ class _ConnectCoupons extends State<ConnectCoupons> {
   var txtContentStyle = TextStyle(fontSize: 16);
 
   Widget _getCoupons() {
-    int slideCnt =
-        (stampCount % 10 == 0) ? stampCount ~/ 10 : stampCount ~/ 10 + 1;
+    int slideCnt = (stampCount <= 10) ? 1 : (stampCount - 1) ~/ 10 + 1;
     List<int> slideItems = [];
     for (int i = 1; i <= slideCnt; i++) slideItems.add(i);
     return Container(

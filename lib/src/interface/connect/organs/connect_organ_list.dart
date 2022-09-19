@@ -3,6 +3,7 @@ import 'dart:math';
 
 import 'package:libero/src/common/apiendpoint.dart';
 import 'package:libero/src/common/const.dart';
+import 'package:libero/src/common/dialogs.dart';
 import 'package:libero/src/http/webservice.dart';
 import 'package:libero/src/interface/component/form/main_form.dart';
 import 'package:libero/src/interface/connect/organs/connect_organ_view.dart';
@@ -40,11 +41,15 @@ class _ConnectOrganList extends State<ConnectOrganList> {
     LocationPermission permission = await Geolocator.checkPermission();
     if (permission == LocationPermission.denied) {
       permission = await Geolocator.requestPermission();
-      if (permission == LocationPermission.deniedForever) {
-        return Future.error('Location Not Available');
-      }
-    } else {
-      return Future.error('Location Not Available');
+      // if (permission == LocationPermission.deniedForever) {
+      //   return Future.error('Location Not Available');
+      // }
+    }
+
+    if (permission == LocationPermission.denied ||
+        permission == LocationPermission.deniedForever) {
+      await Dialogs().waitDialog(context, '位置情報権限を設定してください。');
+      Navigator.pop(context);
     }
 
     Position position = await Geolocator.getCurrentPosition(
@@ -118,7 +123,7 @@ class _ConnectOrganList extends State<ConnectOrganList> {
             return Container(
               child: Column(
                 children: [
-                  _getOrganSearch(),
+                  //_getOrganSearch(),
                   Container(
                     height: 180,
                     decoration: BoxDecoration(color: Colors.grey),
