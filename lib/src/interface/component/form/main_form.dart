@@ -16,12 +16,12 @@ class MainForm extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     globals.connectHeaerTitle = title;
-    return Scaffold(
+    return SafeArea(child:Scaffold(
       appBar: MyConnetAppBar(),
       body: render,
       backgroundColor: bgColor == null ? Colors.white : bgColor, //, //
       drawer: ConnectDrawer(),
       bottomNavigationBar: ConnectBottomBar(),
-    );
+    ));
   }
 }

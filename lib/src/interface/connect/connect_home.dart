@@ -166,7 +166,7 @@ class _ConnectHome extends State<ConnectHome> {
 
     return WillPopScope(
         onWillPop: () async => false,
-        child: Scaffold(
+        child: SafeArea(child: Scaffold(
           key: _scaffoldKey,
           backgroundColor: Colors.white, //.fromRGBO(244, 244, 234, 1),
           //appBar: MyConnetAppBar(),
@@ -186,7 +186,7 @@ class _ConnectHome extends State<ConnectHome> {
             },
           ),
           drawer: ConnectDrawer(),
-        ));
+        )));
   }
 
   Widget _getScenceContent() {
