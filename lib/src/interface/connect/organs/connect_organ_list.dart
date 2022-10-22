@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math';
 
 import 'package:libero/src/common/apiendpoint.dart';
+import 'package:libero/src/common/bussiness/organs.dart';
 import 'package:libero/src/common/const.dart';
 import 'package:libero/src/common/dialogs.dart';
 import 'package:libero/src/http/webservice.dart';
@@ -87,6 +88,8 @@ class _ConnectOrganList extends State<ConnectOrganList> {
                 latlong = _currentlatLng;
               }));
         }
+        item['is_open'] =
+            await ClOrgan().isOpenOrgan(context, item['organ_id']);
         organs.add(OrganModel.fromJson(item));
       }
     }
@@ -236,7 +239,7 @@ class _ConnectOrganList extends State<ConnectOrganList> {
               padding: EdgeInsets.only(top: 4),
               child: Row(children: [
                 Text(
-                  '営業中',
+                  item.isOpen ? '営業中' : '',
                   style: TextStyle(fontSize: 12),
                 ),
                 Expanded(child: Container()),

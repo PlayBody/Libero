@@ -76,8 +76,8 @@ dependencies:
   square_in_app_payments: ^1.7.5
   uuid: ^3.0.3
   flutter_linkify: ^5.0.2
-  stream_transform: ^2.0.0
-
+  maps_launcher: ^2.0.1
+  
 dev_dependencies:
   flutter_test:
     sdk: flutter

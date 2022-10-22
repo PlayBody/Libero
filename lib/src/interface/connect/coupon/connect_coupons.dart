@@ -157,13 +157,23 @@ class _ConnectCoupons extends State<ConnectCoupons> {
                                     height: 50,
                                     alignment: Alignment.center,
                                     child: i <= stamps.length
-                                        ? Icon(Icons.card_giftcard_outlined,
-                                            color: Colors.white, size: 32)
+                                        ? null
+
+                                        // Icon(Icons.card_giftcard_outlined,
+                                        //     color: Colors.white, size: 32)
                                         : Text(i.toString(),
                                             style: TextStyle(
                                                 color: Colors.white,
                                                 fontSize: 24)),
                                     decoration: BoxDecoration(
+                                      image: (i <= stamps.length)
+                                          ? DecorationImage(
+                                              image: NetworkImage(
+                                                apiRenderPrintLogo +
+                                                    stamps[i - 1].organId,
+                                              ),
+                                              fit: BoxFit.fill)
+                                          : null,
                                       color: ((i <= stamps.length &&
                                                   stamps[i - 1]
                                                           .useflag

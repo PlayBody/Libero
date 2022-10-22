@@ -10,6 +10,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter/material.dart';
+import 'package:libero/src/model/home_menu_model.dart';
 import 'package:libero/src/model/usermodel.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
@@ -48,7 +49,7 @@ class _ConnectHome extends State<ConnectHome> {
   String userGrade = '';
   int unreadMessageCount = 0;
 
-  List<String> homeMenus = [];
+  List<HomeMenuModel> homeMenus = [];
   List<CompanySiteModel> sites = [];
   bool isUseStampAndCoupon = true;
 
@@ -132,24 +133,29 @@ class _ConnectHome extends State<ConnectHome> {
   }
 
   Future<List> loadInitData() async {
-    UserModel user = await ClUser().getUserFromId(context, globals.userId);
+    if (globals.userId != '') {
+      UserModel user = await ClUser().getUserFromId(context, globals.userId);
+      userQrCode = user.qrCode;
+      userName = user.userFirstName + ' ' + user.userLastName;
+      userNo = user.userNo;
+      userGrade = user.grade;
 
-    userQrCode = user.qrCode;
-    userName = user.userFirstName + ' ' + user.userLastName;
-    userNo = user.userNo;
-    userGrade = user.grade;
+      globals.userRank = await ClCoupon().loadRankData(context, globals.userId);
+      if (userGrade == '1') userGrade = 'Advanced';
 
-    globals.userRank = await ClCoupon().loadRankData(context, globals.userId);
-
-    if (userGrade == '1') userGrade = 'Advanced';
+      getUnreadMessageCount();
+    } else {
+      globals.userName = 'ログインなし';
+    }
 
     sites = await ClCompany().loadCompanySites(context, APPCOMANYID);
     homeMenus = await ClCommon().loadConnectHomeMenu(context);
 
     // isUseStampAndCoupon = await ClCoupon().isHaveCouponOrStamp(context);
 
-    globals.isCart = homeMenus.contains('connect_product');
-    getUnreadMessageCount();
+    globals.isCart = homeMenus
+        .where((element) => element.menuKey == 'connect_product')
+        .isNotEmpty;
     setState(() {});
     return [];
   }
@@ -160,13 +166,63 @@ class _ConnectHome extends State<ConnectHome> {
     setState(() {});
   }
 
+  void onTapHomeMenu(context, HomeMenuModel homeMenu, {String siteUrl = ''}) {
+    if (!homeMenu.isFree && globals.userId == '') {
+      Navigator.pushNamed(context, '/Login');
+      return;
+    }
+
+    if (homeMenu.menuKey == 'connect_reserve')
+      Navigator.push(context, MaterialPageRoute(builder: (_) {
+        return ConnectReserveOrgan();
+      }));
+
+    if (homeMenu.menuKey == 'connect_check_in')
+      Navigator.push(context, MaterialPageRoute(builder: (_) {
+        return ConnectCheck();
+      }));
+    if (homeMenu.menuKey == 'connect_message')
+      Navigator.push(context, MaterialPageRoute(builder: (_) {
+        return ConnectMessage();
+      }));
+    if (homeMenu.menuKey == 'connect_coupon' && isUseStampAndCoupon)
+      Navigator.push(context, MaterialPageRoute(builder: (_) {
+        return ConnectCoupons();
+      }));
+    if (homeMenu.menuKey == 'connect_advise')
+      Navigator.push(context, MaterialPageRoute(builder: (_) {
+        return ConnetAdvises();
+      }));
+    if (homeMenu.menuKey == 'connect_history')
+      Navigator.push(context, MaterialPageRoute(builder: (_) {
+        return ConnectHistory();
+      }));
+    if (homeMenu.menuKey == 'connect_organ')
+      Navigator.push(context, MaterialPageRoute(builder: (_) {
+        return ConnectOrganList();
+      }));
+    if (homeMenu.menuKey == 'connect_product')
+      Navigator.push(context, MaterialPageRoute(builder: (_) {
+        return ProductList();
+      }));
+    if (homeMenu.menuKey == 'connect_event')
+      Navigator.push(context, MaterialPageRoute(builder: (_) {
+        return ConnectEvent();
+      }));
+    if (homeMenu.menuKey == 'connect_sale')
+      Navigator.push(context, MaterialPageRoute(builder: (_) {
+        return ConnectSale(url: siteUrl);
+      }));
+  }
+
   @override
   Widget build(BuildContext context) {
     globals.connectHeaerTitle = 'メニュー';
 
     return WillPopScope(
         onWillPop: () async => false,
-        child: SafeArea(child: Scaffold(
+        child: SafeArea(
+            child: Scaffold(
           key: _scaffoldKey,
           backgroundColor: Colors.white, //.fromRGBO(244, 244, 234, 1),
           //appBar: MyConnetAppBar(),
@@ -225,7 +281,7 @@ class _ConnectHome extends State<ConnectHome> {
                 color: Color(0xffd64230)),
           ),
         ),
-        _getMemberCard(),
+        if (globals.userId != '') _getMemberCard(),
         _getMenuTitle(),
       ]),
       decoration: BoxDecoration(
@@ -430,22 +486,10 @@ class _ConnectHome extends State<ConnectHome> {
           child: Column(
             children: [
               ...homeMenus.map(
-                (e) => e == 'connect_sale'
-                    ? Column(children: [
-                        ...sites.map(
-                          (e) => _getMenuContent(
-                            e.title == '' ? 'タイトルなし' : e.title,
-                            sites.indexOf(e) == 0
-                                ? 'icon_sale.png'
-                                : 'icon_blog.png',
-                            () => Navigator.push(context,
-                                MaterialPageRoute(builder: (_) {
-                              return ConnectSale(url: e.url);
-                            })),
-                          ),
-                        )
-                      ])
-                    : _getMenuItem(e),
+                (e) => e.menuKey == 'connect_sale'
+                    ? Column(
+                        children: [...sites.map((e) => _getSiteMenuContent(e))])
+                    : _getMenuContent(e),
               ),
             ],
           ),
@@ -454,109 +498,112 @@ class _ConnectHome extends State<ConnectHome> {
     );
   }
 
-  Widget _getMenuItem(menuKey) {
-    if (menuKey == 'connect_reserve')
-      return _getMenuContent('予  約', 'icon_calancer.png', () {
-        Navigator.push(context, MaterialPageRoute(builder: (_) {
-          return ConnectReserveOrgan();
-        }));
-      });
-
-    if (menuKey == 'connect_check_in')
-      return _getMenuContent('チェックイン', 'icon_checkin.png', () {
-        Navigator.push(context, MaterialPageRoute(builder: (_) {
-          return ConnectCheck();
-        }));
-      });
-    if (menuKey == 'connect_message')
-      return _getMenuContent('メッセージ', 'icon_messeage.png', () {
-        Navigator.push(context, MaterialPageRoute(builder: (_) {
-          return ConnectMessage();
-        }));
-      }, isMesseage: true);
-    if (menuKey == 'connect_coupon' && isUseStampAndCoupon)
-      return _getMenuContent('スタンプとクーポン', 'icon_brush.png', () {
-        Navigator.push(context, MaterialPageRoute(builder: (_) {
-          return ConnectCoupons();
-        }));
-      });
-    if (menuKey == 'connect_advise')
-      return _getMenuContent('先生のアドバイス', 'icon_advise.png', () {
-        Navigator.push(context, MaterialPageRoute(builder: (_) {
-          return ConnetAdvises();
-        }));
-      });
-    if (menuKey == 'connect_history')
-      return _getMenuContent('次の予約と履歴', 'icon_history.png', () {
-        Navigator.push(context, MaterialPageRoute(builder: (_) {
-          return ConnectHistory();
-        }));
-      });
-    if (menuKey == 'connect_organ')
-      return _getMenuContent('店舗一覧', 'icon_organlist.png', () {
-        Navigator.push(context, MaterialPageRoute(builder: (_) {
-          return ConnectOrganList();
-        }));
-      });
-    if (menuKey == 'connect_product')
-      return _getMenuContent('回数券購入', 'icon_card.png', () {
-        Navigator.push(context, MaterialPageRoute(builder: (_) {
-          return ProductList();
-        }));
-      });
-    if (menuKey == 'connect_event')
-      return _getMenuContent('イベントカレンダー', 'icon_card.png', () {
-        Navigator.push(context, MaterialPageRoute(builder: (_) {
-          return ConnectEvent();
-        }));
-      });
-
-    return Container();
+  Widget _getMenuContent(HomeMenuModel homeMenu) {
+    String iconPath = '';
+    int badgeCount = 0;
+    switch (homeMenu.menuKey) {
+      case 'connect_reserve':
+        iconPath = 'icon_calancer.png';
+        break;
+      case 'connect_check_in':
+        iconPath = 'icon_checkin.png';
+        break;
+      case 'connect_message':
+        badgeCount = unreadMessageCount;
+        iconPath = 'icon_messeage.png';
+        break;
+      case 'connect_coupon':
+        iconPath = 'icon_brush.png';
+        break;
+      case 'connect_advise':
+        iconPath = 'icon_advise.png';
+        break;
+      case 'connect_history':
+        iconPath = 'icon_history.png';
+        break;
+      case 'connect_organ':
+        iconPath = 'icon_organlist.png';
+        break;
+      case 'connect_product':
+        iconPath = 'icon_card.png';
+        break;
+      case 'connect_event':
+        iconPath = 'icon_card.png';
+        break;
+      default:
+    }
+    return _getMenuItemContent(
+        homeMenu.label, iconPath, () => onTapHomeMenu(context, homeMenu),
+        badgeCount: badgeCount);
   }
 
-  Widget _getMenuContent(label, iconPath, tapFunc, {bool isMesseage = false}) {
+  Widget _getSiteMenuContent(CompanySiteModel siteMenu) {
+    String iconPath = 'icon_blog.png';
+    if (sites.indexOf(siteMenu) == 0) iconPath = 'icon_sale.png';
+
+    HomeMenuModel saleMenu =
+        homeMenus.firstWhere((element) => element.menuKey == 'connect_sale');
+    return _getMenuItemContent(
+      siteMenu.title,
+      iconPath,
+      () => onTapHomeMenu(context, saleMenu, siteUrl: siteMenu.url),
+    );
+  }
+
+  Widget _getMenuItemContent(String title, String iconPath, tapFunc,
+      {badgeCount = 0}) {
     return Container(
       decoration: BoxDecoration(
           border: Border(bottom: BorderSide(color: Color(0xffd9d9d9)))),
       padding: EdgeInsets.symmetric(horizontal: 30),
       child: ListTile(
-          leading: Container(
-              width: 30,
-              child: Image.asset('images/icon/' + iconPath, height: 60)),
-          trailing: Container(
-              width: 22,
-              height: 22,
-              decoration: BoxDecoration(
-                  color: primaryColor, borderRadius: BorderRadius.circular(26)),
-              child: Icon(Icons.keyboard_arrow_right,
-                  color: Colors.white, size: 18)),
-          // Image.asset('connect_images/icon_arrow_right.png',
-          //     height: 26),
-          contentPadding: EdgeInsets.only(left: 2, right: 0),
           onTap: tapFunc,
+          leading: _getMenuIconContainer(iconPath),
+          trailing: _getMenuArrowContainer(),
+          contentPadding: EdgeInsets.only(left: 2, right: 0),
           title: Stack(children: [
-            Positioned(
-                child: Container(
-                    alignment: Alignment.center,
-                    child: Text(label,
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                            color: Color.fromRGBO(82, 82, 82, 1))))),
-            if (isMesseage && unreadMessageCount > 0)
-              Positioned(
-                  right: 40,
-                  child: Container(
-                      alignment: Alignment.center,
-                      width: 20,
-                      height: 20,
-                      decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(20),
-                          color: Colors.red),
-                      child: Text(unreadMessageCount.toString(),
-                          style: TextStyle(fontSize: 14, color: Colors.white))))
+            Positioned(child: _getMenuTitleContainer(title)),
+            if (badgeCount > 0)
+              Positioned(right: 40, child: _getBadgeContainer(badgeCount))
           ])),
+    );
+  }
+
+  Widget _getMenuIconContainer(String iconPath) {
+    return Container(
+        width: 30, child: Image.asset('images/icon/' + iconPath, height: 60));
+  }
+
+  Widget _getMenuArrowContainer() {
+    return Container(
+        width: 22,
+        height: 22,
+        decoration: BoxDecoration(
+            color: primaryColor, borderRadius: BorderRadius.circular(26)),
+        child: Icon(Icons.keyboard_arrow_right, color: Colors.white, size: 18));
+  }
+
+  Widget _getMenuTitleContainer(String title) {
+    return Container(
+      alignment: Alignment.center,
+      child: Text(title,
+          textAlign: TextAlign.center,
+          style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+              color: Color.fromRGBO(82, 82, 82, 1))),
+    );
+  }
+
+  Widget _getBadgeContainer(int Cnt) {
+    return Container(
+      alignment: Alignment.center,
+      width: 20,
+      height: 20,
+      decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20), color: Colors.red),
+      child: Text(Cnt.toString(),
+          style: TextStyle(fontSize: 14, color: Colors.white)),
     );
   }
 }

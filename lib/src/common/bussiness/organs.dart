@@ -1,5 +1,7 @@
 import 'package:libero/src/common/bussiness/common.dart';
 import 'package:libero/src/http/webservice.dart';
+import 'package:libero/src/model/organ_special_time_model.dart';
+import 'package:libero/src/model/organ_time_model.dart';
 import 'package:libero/src/model/organmodel.dart';
 
 import '../apiendpoint.dart';
@@ -64,5 +66,44 @@ class ClOrgan {
     }).then((v) => {results = v});
 
     return results['organ'];
+  }
+
+  Future<List<OrganTimeModel>> loadOrganTimes(context, String organId) async {
+    String apiUrl = apiBase + '/apiorgans/loadOrganTimes';
+    Map<dynamic, dynamic> results = {};
+    await Webservice().loadHttp(
+        context, apiUrl, {'organ_id': organId}).then((v) => {results = v});
+
+    List<OrganTimeModel> times = [];
+    if (results['isLoad']) {
+      for (var item in results['data']) {
+        times.add(OrganTimeModel.fromJson(item));
+      }
+    }
+    return times;
+  }
+
+  Future<List<OrganSpecialTimeModel>> loadOrganSpecialTimes(
+      context, String organId) async {
+    String apiUrl = apiBase + '/apis/organ/opentime/getTodaySpecialTime';
+    Map<dynamic, dynamic> results = {};
+    await Webservice().loadHttp(
+        context, apiUrl, {'organ_id': organId}).then((v) => {results = v});
+
+    List<OrganSpecialTimeModel> times = [];
+    if (results['is_load']) {
+      for (var item in results['times']) {
+        times.add(OrganSpecialTimeModel.fromJson(item));
+      }
+    }
+    return times;
+  }
+
+  Future<bool> isOpenOrgan(context, String organId) async {
+    String apiUrl = apiBase + '/apis/organ/opentime/isOpen';
+    Map<dynamic, dynamic> results = {};
+    await Webservice().loadHttp(
+        context, apiUrl, {'organ_id': organId}).then((v) => {results = v});
+    return results['is_open'];
   }
 }
