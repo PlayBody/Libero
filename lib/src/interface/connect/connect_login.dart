@@ -124,6 +124,15 @@ class _ConnectLogin extends State<ConnectLogin> {
                           ),
                           onPressed: () =>
                               Navigator.pushNamed(context, '/Register'),
+                        ),
+                        TextButton(
+                          child: Text(
+                            'ホーム画面へ',
+                            style:
+                                TextStyle(color: Colors.black.withOpacity(0.5)),
+                          ),
+                          onPressed: () =>
+                              Navigator.pushNamed(context, '/Home'),
                         )
                       ],
                     )),
